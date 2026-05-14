@@ -31,8 +31,16 @@ function App() {
   const [url, setUrl] = useState("");
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
+  const [aiStatus, setAiStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/ai-status")
+      .then((response) => response.json())
+      .then(setAiStatus)
+      .catch(() => setAiStatus(null));
+  }, []);
 
   async function analyze() {
     setLoading(true);
@@ -64,6 +72,14 @@ function App() {
             <div>
               <p>intelliNote</p>
               <span>AI lesson studio</span>
+            </div>
+          </div>
+
+          <div className={`ai-status ${aiStatus?.available ? "online" : ""}`}>
+            <BadgeCheck size={18} />
+            <div>
+              <strong>{aiStatus?.available ? "Ollama AI agent active" : "Local fallback ready"}</strong>
+              <span>{aiStatus?.available ? aiStatus.model : "Start Ollama to enable free LLM generation"}</span>
             </div>
           </div>
 
@@ -169,6 +185,7 @@ function Studio({ result }) {
           <h1>{result.title}</h1>
         </div>
         <div className="stats">
+          <span><Brain size={17} /> {result.aiProvider || "AI lesson engine"}</span>
           <span><Clock3 size={17} /> {result.sourceStats.readingMinutes} min read</span>
           <span><FileText size={17} /> {result.sourceStats.words} words</span>
         </div>

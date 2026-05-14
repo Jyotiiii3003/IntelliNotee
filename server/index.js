@@ -1,10 +1,26 @@
 import express from "express";
 import multer from "multer";
 import pdfParse from "pdf-parse";
+import { existsSync, readFileSync } from "node:fs";
+
+function loadLocalEnv() {
+  if (!existsSync(".env")) return;
+  const lines = readFileSync(".env", "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const [key, ...valueParts] = trimmed.split("=");
+    if (!process.env[key]) process.env[key] = valueParts.join("=").trim();
+  }
+}
+
+loadLocalEnv();
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 const PORT = process.env.PORT || 5174;
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2";
 
 app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: true, limit: "8mb" }));
@@ -140,6 +156,156 @@ function buildMindMap(text) {
   return { central, branches };
 }
 
+function buildAlgorithmLesson(text) {
+  return {
+    title: titleFromText(text),
+    aiProvider: "Local algorithm",
+    sourceStats: {
+      words: text.split(/\s+/).filter(Boolean).length,
+      characters: text.length,
+      readingMinutes: Math.max(1, Math.round(text.split(/\s+/).length / 190))
+    },
+    keywords: keywords(text, 14),
+    summary: summarize(text, 7),
+    scenes: buildScenes(text),
+    quiz: buildQuiz(text),
+    mindMap: buildMindMap(text)
+  };
+}
+
+function extractJson(content) {
+  const trimmed = cleanText(content);
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const match = trimmed.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("AI response did not contain JSON.");
+    return JSON.parse(match[0]);
+  }
+}
+
+function normalizeAiLesson(aiLesson, fallback, text) {
+  const palette = ["#EFD8F7", "#CDEAE4", "#FFE3C8", "#D9E7FF", "#F8D7DA", "#DCF5D4", "#FDECC8"];
+  const icons = ["Sparkles", "BookOpen", "Network", "Lightbulb", "Target", "Brain", "CheckCircle2"];
+  const title = cleanText(aiLesson.title || fallback.title || titleFromText(text));
+  const scenes = Array.isArray(aiLesson.scenes) ? aiLesson.scenes : [];
+  const quiz = Array.isArray(aiLesson.quiz) ? aiLesson.quiz : [];
+  const branches = Array.isArray(aiLesson.mindMap?.branches) ? aiLesson.mindMap.branches : [];
+
+  return {
+    ...fallback,
+    title: title || fallback.title,
+    aiProvider: `Ollama ${OLLAMA_MODEL}`,
+    summary: Array.isArray(aiLesson.summary) && aiLesson.summary.length ? aiLesson.summary.map((item) => cleanText(String(item))).filter(Boolean).slice(0, 7) : fallback.summary,
+    scenes: scenes.length
+      ? scenes.slice(0, 7).map((scene, index) => ({
+          id: index + 1,
+          title: cleanText(scene.title || `Idea ${index + 1}`).slice(0, 90),
+          narration: cleanText(scene.narration || scene.caption || fallback.scenes[index]?.narration || ""),
+          caption: cleanText(scene.caption || scene.narration || fallback.scenes[index]?.caption || ""),
+          visual: Array.isArray(scene.visual) && scene.visual.length ? scene.visual.map((item) => cleanText(String(item)).slice(0, 24)).filter(Boolean).slice(0, 4) : fallback.scenes[index]?.visual || [],
+          duration: Number.isFinite(Number(scene.duration)) ? Math.max(7, Math.min(18, Number(scene.duration))) : fallback.scenes[index]?.duration || 9,
+          color: palette[index % palette.length],
+          icon: icons.includes(scene.icon) ? scene.icon : icons[index % icons.length]
+        }))
+      : fallback.scenes,
+    quiz: quiz.length
+      ? quiz.slice(0, 6).map((item, index) => {
+          const options = Array.isArray(item.options) ? item.options.map((option) => cleanText(String(option))).filter(Boolean).slice(0, 4) : [];
+          const answer = cleanText(String(item.answer || options[0] || ""));
+          if (answer && !options.includes(answer)) options.unshift(answer);
+          while (options.length < 4) options.push(["Main idea", "Evidence", "Context", "Result"][options.length]);
+          return {
+            id: index + 1,
+            question: cleanText(item.question || fallback.quiz[index]?.question || `Question ${index + 1}`),
+            options: options.slice(0, 4),
+            answer: answer || options[0],
+            explanation: cleanText(item.explanation || fallback.quiz[index]?.explanation || "")
+          };
+        })
+      : fallback.quiz,
+    mindMap: {
+      central: cleanText(aiLesson.mindMap?.central || title || fallback.mindMap.central),
+      branches: branches.length
+        ? branches.slice(0, 8).map((branch, index) => ({
+            id: `branch-${index}`,
+            label: cleanText(branch.label || `Idea ${index + 1}`).slice(0, 24),
+            strength: Number.isFinite(Number(branch.strength)) ? Number(branch.strength) : index + 1,
+            children: Array.isArray(branch.children) ? branch.children.map((child) => cleanText(String(child)).slice(0, 24)).filter(Boolean).slice(0, 4) : []
+          }))
+        : fallback.mindMap.branches
+    }
+  };
+}
+
+async function generateWithOllama(text, fallback) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  const source = text.slice(0, 12000);
+  const prompt = `You are intelliNote, an educational AI lesson agent.
+Create a concise interactive learning lesson from the source text.
+Return only valid JSON with this exact structure:
+{
+  "title": "short lesson title",
+  "summary": ["5 to 7 clear bullet sentences"],
+  "scenes": [
+    {
+      "title": "scene title",
+      "narration": "friendly voiceover script, 1 or 2 sentences",
+      "caption": "short caption",
+      "visual": ["keyword", "keyword", "keyword", "keyword"],
+      "duration": 8,
+      "icon": "Sparkles"
+    }
+  ],
+  "quiz": [
+    {
+      "question": "multiple choice question",
+      "options": ["A", "B", "C", "D"],
+      "answer": "exact correct option",
+      "explanation": "why it is correct"
+    }
+  ],
+  "mindMap": {
+    "central": "central concept",
+    "branches": [
+      { "label": "concept", "strength": 3, "children": ["detail", "detail"] }
+    ]
+  }
+}
+Use 4 to 7 scenes, 4 to 6 quiz questions, and 5 to 8 mind-map branches.
+Allowed icons: Sparkles, BookOpen, Network, Lightbulb, Target, Brain, CheckCircle2.
+
+Source text:
+${source}`;
+
+  try {
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt,
+        stream: false,
+        format: "json",
+        options: {
+          temperature: 0.35,
+          num_predict: 2800
+        }
+      }),
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`Ollama responded with ${response.status}`);
+    const data = await response.json();
+    return normalizeAiLesson(extractJson(data.response || ""), fallback, text);
+  } catch (error) {
+    console.warn(`Ollama unavailable, using local algorithm: ${error.message}`);
+    return fallback;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function extractFromUrl(url) {
   const response = await fetch(url, {
     headers: {
@@ -202,22 +368,37 @@ app.post("/api/analyze", upload.single("file"), async (req, res) => {
       return res.status(422).json({ error: "Please provide more source text, a readable file, or a URL with enough content." });
     }
 
-    const scenes = buildScenes(text);
-    res.json({
-      title: titleFromText(text),
-      sourceStats: {
-        words: text.split(/\s+/).filter(Boolean).length,
-        characters: text.length,
-        readingMinutes: Math.max(1, Math.round(text.split(/\s+/).length / 190))
-      },
-      keywords: keywords(text, 14),
-      summary: summarize(text, 7),
-      scenes,
-      quiz: buildQuiz(text),
-      mindMap: buildMindMap(text)
-    });
+    const fallback = buildAlgorithmLesson(text);
+    const lesson = await generateWithOllama(text, fallback);
+    res.json(lesson);
   } catch (error) {
     res.status(500).json({ error: error.message || "Analysis failed." });
+  }
+});
+
+app.get("/api/ai-status", async (req, res) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+  try {
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Ollama responded with ${response.status}`);
+    const data = await response.json();
+    const models = Array.isArray(data.models) ? data.models.map((model) => model.name) : [];
+    res.json({
+      provider: "Ollama",
+      model: OLLAMA_MODEL,
+      available: models.some((model) => model === OLLAMA_MODEL || model.startsWith(`${OLLAMA_MODEL}:`)),
+      installedModels: models
+    });
+  } catch {
+    res.json({
+      provider: "Local algorithm",
+      model: OLLAMA_MODEL,
+      available: false,
+      installedModels: []
+    });
+  } finally {
+    clearTimeout(timeout);
   }
 });
 

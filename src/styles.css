@@ -66,7 +66,7 @@ main {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 26px;
+  margin-bottom: 16px;
 }
 
 .brand-mark,
@@ -97,6 +97,39 @@ main {
   letter-spacing: 0;
   text-transform: uppercase;
   font-size: 13px;
+}
+
+.ai-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px 13px;
+  border-radius: 16px;
+  background: #fff4df;
+  color: #6c5875;
+  border: 1px solid rgba(80, 71, 97, 0.1);
+}
+
+.ai-status.online {
+  background: #dcf5d4;
+  color: #3e6044;
+}
+
+.ai-status strong,
+.ai-status span {
+  display: block;
+}
+
+.ai-status strong {
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.ai-status span {
+  font-size: 14px;
+  color: inherit;
+  opacity: 0.82;
 }
 
 .type-tabs {
