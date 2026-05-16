@@ -418,14 +418,7 @@ input {
   place-items: center;
 }
 
-.scene-image {
-  width: min(560px, 100%);
-  height: 240px;
-  object-fit: cover;
-  border-radius: 24px;
-  box-shadow: 0 24px 60px rgba(68, 55, 84, 0.18);
-  border: 6px solid rgba(255, 255, 255, 0.72);
-}
+
 
 .icon-bubble {
   width: 150px;
@@ -803,4 +796,20 @@ input {
 .studio-tabs button.active {
   background: #524474;
   color: white;
+}
+
+.scene-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.scene-image img {
+  width: 100%;
+  max-width: 480px;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 24px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
 }

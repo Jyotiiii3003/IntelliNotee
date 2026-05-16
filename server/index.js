@@ -403,58 +403,39 @@ app.get("/api/ai-status", async (req, res) => {
 });
 
 app.post("/api/generate-visual", async (req, res) => {
-  if (!GEMINI_API_KEY) {
-    return res.status(400).json({ error: "Add GEMINI_API_KEY to enable Gemini visual generation." });
-  }
-
-  const scene = req.body?.scene ?? {};
-  const prompt = cleanText(
-    scene.visualPrompt ||
-      `Create a pastel educational illustration for this learning video scene: ${scene.title || ""}. Narration: ${scene.narration || ""}. Use a clean, modern, friendly explainer-video style. Do not include readable text, captions, watermarks, UI, or logos.`
-  ).slice(0, 900);
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60000);
-
   try {
-    const response = await fetch(GEMINI_IMAGE_API_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }]
-          }
-        ],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"]
-        }
-      }),
-      signal: controller.signal
-    });
+    const { scene } = req.body;
 
-    if (!response.ok) {
-      const detail = response.status === 429 ? "Gemini image quota or free-tier access is currently unavailable for this key." : `Gemini image generation responded with ${response.status}`;
-      throw new Error(detail);
+    if (!scene) {
+      return res.status(400).json({
+        error: "Scene data missing"
+      });
     }
-    const data = await response.json();
-    const imagePart = data.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.data);
-    if (!imagePart) throw new Error("Gemini did not return an image. Try a more visual scene prompt.");
+
+    const query = [
+  scene.title,
+  ...(scene.visual || []),
+  "education",
+  "diagram",
+  "technology"
+]
+  .filter(Boolean)
+  .join(" ");
+
+   const imageUrl = `https://loremflickr.com/1200/700/${encodeURIComponent(query)}?random=${Date.now()}`;
 
     res.json({
-      imageUrl: `data:${imagePart.inlineData.mimeType || "image/png"};base64,${imagePart.inlineData.data}`,
-      model: GEMINI_IMAGE_MODEL
+      imageUrl
     });
+
   } catch (error) {
-    res.status(500).json({ error: error.message || "Visual generation failed." });
-  } finally {
-    clearTimeout(timeout);
+    console.error(error);
+
+    res.status(500).json({
+      error: "Failed to generate visual"
+    });
   }
 });
-
 app.listen(PORT, () => {
   console.log(`intelliNote backend running on http://127.0.0.1:${PORT}`);
 });

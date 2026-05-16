@@ -349,7 +349,16 @@ function VideoExperience({ scenes, onScenesChange }) {
         </div>
         <div className="visual-cluster">
           {scene.imageUrl ? (
-            <img className="scene-image" src={scene.imageUrl} alt="" />
+            <div className="scene-image">
+  <img
+    src={scene.imageUrl}
+    alt={scene.title}
+    onError={(e) => {
+      e.target.src =
+        "https://images.unsplash.com/photo-1516321318423-f06f85e504b3";
+    }}
+  />
+</div>
           ) : (
             <>
               <div className="icon-bubble"><Icon size={54} /></div>
