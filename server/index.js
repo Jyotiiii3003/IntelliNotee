@@ -3,6 +3,7 @@ import multer from "multer";
 import pdfParse from "pdf-parse";
 import { existsSync, readFileSync } from "node:fs";
 import mongoose from "mongoose";
+import { YoutubeTranscript } from "youtube-transcript";
 
 const lessonSchema = new mongoose.Schema({
   title: String,
@@ -405,34 +406,38 @@ async function extractFromUrl(url) {
 }
 
 async function getYouTubeTranscript(url) {
-  let id = "";
+  let videoId = "";
 
-if (url.includes("youtube.com")) {
-  id = new URL(url).searchParams.get("v");
-} else if (url.includes("youtu.be")) {
-  id = url.split("youtu.be/")[1]?.split("?")[0];
-}
-
-if (!id) {
-  throw new Error("Invalid YouTube URL");
-}
-  if (!id) throw new Error("Could not identify the YouTube video id.");
-  const transcriptUrl = `https://video.google.com/timedtext?lang=en&v=${id}`;
-  const response = await fetch(transcriptUrl);
-  const xml = await response.text();
-  const transcript = xml
-    .replace(/<text[^>]*>/g, " ")
-    .replace(/<\/text>/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"');
-  if (cleanText(transcript).length < 80) {
-    throw new Error(
-  "This YouTube video does not expose public captions. Paste transcript manually or try another video."
-);
+  if (url.includes("youtube.com")) {
+    videoId = new URL(url).searchParams.get("v");
+  } else if (url.includes("youtu.be")) {
+    videoId = url.split("youtu.be/")[1]?.split("?")[0];
   }
-  return cleanText(transcript);
+
+  if (!videoId) {
+    throw new Error("Invalid YouTube URL");
+  }
+
+  try {
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+
+    const text = transcript
+      .map((item) => item.text)
+      .join(" ");
+
+    if (!text || text.length < 50) {
+      throw new Error("Transcript too short");
+    }
+
+    return cleanText(text);
+
+  } catch (error) {
+    console.error(error);
+
+    throw new Error(
+      "Could not fetch YouTube transcript. This video may not have captions enabled."
+    );
+  }
 }
 
 app.post("/api/analyze", upload.single("file"), async (req, res) => {
