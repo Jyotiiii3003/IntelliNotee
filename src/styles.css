@@ -906,3 +906,35 @@ input {
   color: #8e82a8;
   font-size: 13px;
 }
+.lesson-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lesson-open {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.delete-btn {
+  border: none;
+  background: #ffe7ee;
+  color: #b4234d;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.delete-btn:hover {
+  background: #ffd3df;
+  transform: scale(1.05);
+}

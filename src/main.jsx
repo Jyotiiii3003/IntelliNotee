@@ -61,6 +61,19 @@ function App() {
   fetchSavedLessons();
 }, []);
 
+    async function deleteLesson(id) {
+  try {
+    await fetch(`/api/lessons/${id}`, {
+      method: "DELETE"
+    });
+
+    fetchSavedLessons();
+
+  } catch (error) {
+    console.error(error);
+  }
+}
+
   async function analyze() {
     setLoading(true);
     setError("");
@@ -157,8 +170,8 @@ function App() {
             Generate learning video
           </button>
 
-            <div className="saved-lessons">
-  <h3> Saved Lessons</h3>
+<div className="saved-lessons">
+  <h3>Saved Lessons</h3>
 
   {savedLessons.length === 0 ? (
     <p className="empty-lessons">
@@ -166,17 +179,25 @@ function App() {
     </p>
   ) : (
     savedLessons.map((lesson) => (
-      <button
-        key={lesson._id}
-        className="lesson-card"
-        onClick={() => setResult(lesson)}
-      >
-        <strong>{lesson.title}</strong>
+      <div className="lesson-card" key={lesson._id}>
+        <button
+          className="lesson-open"
+          onClick={() => setResult(lesson)}
+        >
+          <strong>{lesson.title}</strong>
 
-        <span>
-          {new Date(lesson.createdAt).toLocaleDateString()}
-        </span>
-      </button>
+          <span>
+            {new Date(lesson.createdAt).toLocaleDateString()}
+          </span>
+        </button>
+
+        <button
+          className="delete-btn"
+          onClick={() => deleteLesson(lesson._id)}
+        >
+          🗑
+        </button>
+      </div>
     ))
   )}
 </div>

@@ -558,3 +558,20 @@ app.get("/api/lessons", async (req, res) => {
     });
   }
 });
+
+app.delete("/api/lessons/:id", async (req, res) => {
+  try {
+    await Lesson.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Failed to delete lesson"
+    });
+  }
+});
