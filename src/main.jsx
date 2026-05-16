@@ -181,6 +181,7 @@ function WelcomePanel() {
 function Studio({ result }) {
   const [scenes, setScenes] = useState(result.scenes);
   const [activeTab, setActiveTab] = useState("video");
+  const [saveMessage, setSaveMessage] = useState("");
 
   async function saveLesson() {
   try {
@@ -195,7 +196,11 @@ function Studio({ result }) {
     const data = await response.json();
 
     if (data.success) {
-      alert("Lesson saved!");
+      setSaveMessage(" Lesson saved successfully!");
+
+      setTimeout(() => {
+      setSaveMessage("");
+      }, 3000);
     }
 
   } catch (error) {
@@ -235,10 +240,14 @@ function Studio({ result }) {
         </button>
       </div>
 
-      <button onClick={saveLesson}>
+      <button className="save-btn" onClick={saveLesson}>
            Save Lesson
       </button>
-
+      {saveMessage && (
+        <div className="save-message">
+        {saveMessage}
+        </div>
+        )}
       <header className="result-header">
         <div>
           <p className="eyebrow">Generated lesson</p>

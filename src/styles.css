@@ -813,3 +813,44 @@ input {
   border-radius: 24px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12);
 }
+
+.save-btn {
+  border: none;
+  background: linear-gradient(135deg, #6d5dfc, #8b7bff);
+  color: white;
+  padding: 12px 22px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 10px 24px rgba(109, 93, 252, 0.25);
+  margin-bottom: 18px;
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(109, 93, 252, 0.35);
+}
+
+.save-message {
+  margin-top: 10px;
+  background: #e8fff1;
+  color: #1d7a46;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-weight: 600;
+  width: fit-content;
+  animation: fadeSlide 0.3s ease;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
