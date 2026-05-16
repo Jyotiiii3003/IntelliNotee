@@ -40,7 +40,7 @@ function App() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/ai-status")
+    fetch(`${import.meta.env.VITE_API_URL}/api/ai-status`)
       .then((response) => response.json())
       .then(setAiStatus)
       .catch(() => setAiStatus(null));
@@ -48,7 +48,7 @@ function App() {
 
     async function fetchSavedLessons() {
   try {
-    const response = await fetch("/api/lessons");
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lessons`);
 
     const data = await response.json();
 
@@ -64,9 +64,9 @@ function App() {
 
     async function deleteLesson(id) {
   try {
-    await fetch(`/api/lessons/${id}`, {
-      method: "DELETE"
-    });
+    await fetch(`${import.meta.env.VITE_API_URL}/api/lessons/${id}`, {
+  method: "DELETE"
+});
 
     fetchSavedLessons();
 
@@ -85,7 +85,7 @@ function App() {
     if (sourceType === "file" && file) formData.append("file", file);
 
     try {
-      const response = await fetch("/api/analyze", { method: "POST", body: formData });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/analyze`, { method: "POST", body: formData });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Analysis failed.");
       setResult(data);
@@ -252,7 +252,7 @@ function Studio({ result,fetchSavedLessons }) {
 
   async function saveLesson() {
   try {
-    const response = await fetch("/api/save-lesson", {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/save-lesson`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -281,7 +281,7 @@ function Studio({ result,fetchSavedLessons }) {
   setChatLoading(true);
 
   try {
-    const response = await fetch("/api/chat", {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -559,7 +559,7 @@ function VideoExperience({ scenes, onScenesChange }) {
     setVisualLoading(true);
     setVisualError("");
     try {
-      const response = await fetch("/api/generate-visual", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/generate-visual`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ scene })

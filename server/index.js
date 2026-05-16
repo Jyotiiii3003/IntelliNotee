@@ -4,7 +4,7 @@ import pdfParse from "pdf-parse";
 import { existsSync, readFileSync } from "node:fs";
 import mongoose from "mongoose";
 import { YoutubeTranscript } from "youtube-transcript";
-
+import cors from "cors";
 const lessonSchema = new mongoose.Schema({
   title: String,
   aiProvider: String,
@@ -80,6 +80,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch((err) => console.error("MongoDB Error:", err));
 
 const app = express();
+app.use(cors());
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 const PORT = process.env.PORT || 5174;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
