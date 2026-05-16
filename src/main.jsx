@@ -24,6 +24,7 @@ import {
   Volume2
 } from "lucide-react";
 import "./styles.css";
+import jsPDF from "jspdf";
 
 const iconMap = { Sparkles, BookOpen: FileText, Network, Lightbulb, Target, Brain, CheckCircle2 };
 
@@ -271,6 +272,75 @@ function Studio({ result,fetchSavedLessons }) {
   }
 }
 
+  function exportPDF() {
+  const doc = new jsPDF();
+
+  let y = 20;
+
+  doc.setFontSize(22);
+  doc.text(result.title, 20, y);
+
+  y += 15;
+
+  doc.setFontSize(14);
+  doc.text("Summary", 20, y);
+
+  y += 10;
+
+  (result.summary || []).forEach((item) => {
+    const lines = doc.splitTextToSize(`• ${item}`, 170);
+
+    doc.text(lines, 20, y);
+
+    y += lines.length * 8 + 4;
+  });
+
+  y += 8;
+
+  doc.setFontSize(14);
+  doc.text("Quiz", 20, y);
+
+  y += 10;
+
+  result.quiz.forEach((q, index) => {
+    const lines = doc.splitTextToSize(
+      `${index + 1}. ${q.question}`,
+      170
+    );
+
+    doc.text(lines, 20, y);
+
+    y += lines.length * 8;
+
+    doc.text(`Answer: ${q.answer}`, 25, y);
+
+    y += 12;
+  });
+
+  y += 8;
+
+  doc.setFontSize(14);
+  doc.text("Mind Map", 20, y);
+
+  y += 10;
+
+  (result.mindMap?.branches || []).forEach((branch) => {
+    doc.text(`• ${branch.label}`, 20, y);
+
+    y += 8;
+
+    branch.children.forEach((child) => {
+      doc.text(`- ${child}`, 30, y);
+
+      y += 8;
+    });
+
+    y += 4;
+  });
+
+  doc.save(`${result.title}.pdf`);
+}
+
   useEffect(() => {
     setScenes(result.scenes);
   }, [result]);
@@ -318,9 +388,15 @@ function Studio({ result,fetchSavedLessons }) {
         </div>
       </header>
 
-      <button className="save-btn" onClick={saveLesson}>
-           Save Lesson
-      </button>
+      <div className="action-buttons">
+  <button className="save-btn" onClick={saveLesson}>
+     Save Lesson
+  </button>
+
+  <button className="save-btn" onClick={exportPDF}>
+     Export PDF
+  </button>
+</div>
       {saveMessage && (
         <div className="save-message">
         {saveMessage}
