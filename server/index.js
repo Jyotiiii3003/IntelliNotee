@@ -542,3 +542,19 @@ app.post("/api/save-lesson", async (req, res) => {
     });
   }
 });
+
+app.get("/api/lessons", async (req, res) => {
+  try {
+    const lessons = await Lesson.find()
+      .sort({ createdAt: -1 });
+
+    res.json(lessons);
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Failed to fetch lessons"
+    });
+  }
+});

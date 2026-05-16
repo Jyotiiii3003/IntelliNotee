@@ -33,6 +33,7 @@ function App() {
   const [url, setUrl] = useState("");
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
+  const [savedLessons, setSavedLessons] = useState([]);
   const [aiStatus, setAiStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,6 +44,22 @@ function App() {
       .then(setAiStatus)
       .catch(() => setAiStatus(null));
   }, []);
+
+    async function fetchSavedLessons() {
+  try {
+    const response = await fetch("/api/lessons");
+
+    const data = await response.json();
+
+    setSavedLessons(data);
+
+  } catch (error) {
+    console.error(error);
+  }
+}
+  useEffect(() => {
+  fetchSavedLessons();
+}, []);
 
   async function analyze() {
     setLoading(true);
@@ -139,11 +156,36 @@ function App() {
             {loading ? <Loader2 className="spin" size={20} /> : <Sparkles size={20} />}
             Generate learning video
           </button>
+
+            <div className="saved-lessons">
+  <h3> Saved Lessons</h3>
+
+  {savedLessons.length === 0 ? (
+    <p className="empty-lessons">
+      No saved lessons yet.
+    </p>
+  ) : (
+    savedLessons.map((lesson) => (
+      <button
+        key={lesson._id}
+        className="lesson-card"
+        onClick={() => setResult(lesson)}
+      >
+        <strong>{lesson.title}</strong>
+
+        <span>
+          {new Date(lesson.createdAt).toLocaleDateString()}
+        </span>
+      </button>
+    ))
+  )}
+</div>
+
           {error && <p className="error">{error}</p>}
         </aside>
 
         <section className="output">
-          {!result ? <WelcomePanel /> : <Studio result={result} />}
+          {!result ? <WelcomePanel /> : <Studio result={result} fetchSavedLessons={fetchSavedLessons} />}
         </section>
       </section>
     </main>
@@ -178,7 +220,7 @@ function WelcomePanel() {
   );
 }
 
-function Studio({ result }) {
+function Studio({ result,fetchSavedLessons }) {
   const [scenes, setScenes] = useState(result.scenes);
   const [activeTab, setActiveTab] = useState("video");
   const [saveMessage, setSaveMessage] = useState("");
@@ -197,7 +239,7 @@ function Studio({ result }) {
 
     if (data.success) {
       setSaveMessage(" Lesson saved successfully!");
-
+      fetchSavedLessons();
       setTimeout(() => {
       setSaveMessage("");
       }, 3000);
@@ -240,14 +282,7 @@ function Studio({ result }) {
         </button>
       </div>
 
-      <button className="save-btn" onClick={saveLesson}>
-           Save Lesson
-      </button>
-      {saveMessage && (
-        <div className="save-message">
-        {saveMessage}
-        </div>
-        )}
+      
       
       <header className="result-header">
         <div>
@@ -261,6 +296,15 @@ function Studio({ result }) {
           <span><FileText size={17} /> {result.sourceStats.words} words</span>
         </div>
       </header>
+
+      <button className="save-btn" onClick={saveLesson}>
+           Save Lesson
+      </button>
+      {saveMessage && (
+        <div className="save-message">
+        {saveMessage}
+        </div>
+        )}
 
       {activeTab === "video" && (
         <VideoExperience

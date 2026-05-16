@@ -859,3 +859,50 @@ input {
     transform: translateY(0);
   }
 }
+
+.saved-lessons {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid #eadff4;
+}
+
+.saved-lessons h3 {
+  font-size: 15px;
+  margin-bottom: 14px;
+  color: #5f4b8b;
+}
+
+.lesson-card {
+  width: 100%;
+  border: none;
+  background: #f5eefb;
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lesson-card:hover {
+  background: #eadcf9;
+  transform: translateY(-1px);
+}
+
+.lesson-card strong {
+  color: #2f2345;
+  font-size: 14px;
+}
+
+.lesson-card span {
+  color: #7e7398;
+  font-size: 12px;
+}
+
+.empty-lessons {
+  color: #8e82a8;
+  font-size: 13px;
+}
