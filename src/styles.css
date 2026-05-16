@@ -995,3 +995,35 @@ input {
   flex-wrap: wrap;
   margin: 12px 0;
 }
+.ai-chat {
+  margin-top: 18px;
+}
+
+.chat-box {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.chat-box input {
+  flex: 1;
+}
+
+.chat-box button {
+  border: none;
+  background: #524474;
+  color: white;
+  padding: 0 20px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.ai-answer {
+  margin-top: 18px;
+  background: #f7f2fc;
+  padding: 18px;
+  border-radius: 18px;
+  line-height: 1.7;
+  color: #372a54;
+  white-space: pre-wrap;
+}

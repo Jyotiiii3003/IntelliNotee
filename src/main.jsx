@@ -246,6 +246,9 @@ function Studio({ result,fetchSavedLessons }) {
   const [scenes, setScenes] = useState(result.scenes);
   const [activeTab, setActiveTab] = useState("video");
   const [saveMessage, setSaveMessage] = useState("");
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
 
   async function saveLesson() {
   try {
@@ -269,6 +272,34 @@ function Studio({ result,fetchSavedLessons }) {
 
   } catch (error) {
     console.error(error);
+  }
+}
+
+      async function askAI() {
+  if (!question.trim()) return;
+
+  setChatLoading(true);
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        question,
+        lesson: result
+      })
+    });
+
+    const data = await response.json();
+
+    setAnswer(data.answer);
+
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setChatLoading(false);
   }
 }
 
@@ -389,14 +420,14 @@ function Studio({ result,fetchSavedLessons }) {
       </header>
 
       <div className="action-buttons">
-  <button className="save-btn" onClick={saveLesson}>
-     Save Lesson
-  </button>
+      <button className="save-btn" onClick={saveLesson}>
+         Save Lesson
+        </button>
 
-  <button className="save-btn" onClick={exportPDF}>
-     Export PDF
-  </button>
-</div>
+       <button className="save-btn" onClick={exportPDF}>
+         Export PDF
+       </button>
+      </div>
       {saveMessage && (
         <div className="save-message">
         {saveMessage}
@@ -423,6 +454,29 @@ function Studio({ result,fetchSavedLessons }) {
           <MindMap map={result.mindMap} />
         </div>
       )}
+
+      <section className="panel ai-chat">
+  <h2> Ask AI About This Lesson</h2>
+
+  <div className="chat-box">
+    <input
+      type="text"
+      placeholder="Ask anything about this lesson..."
+      value={question}
+      onChange={(e) => setQuestion(e.target.value)}
+    />
+
+    <button onClick={askAI} disabled={chatLoading}>
+      {chatLoading ? "Thinking..." : "Ask AI"}
+    </button>
+  </div>
+
+  {answer && (
+    <div className="ai-answer">
+      {answer}
+    </div>
+  )}
+</section>
 
     </div>
   );

@@ -575,3 +575,86 @@ app.delete("/api/lessons/:id", async (req, res) => {
     });
   }
 });
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { question, lesson } = req.body;
+
+    if (!question || !lesson) {
+      return res.status(400).json({
+        error: "Question and lesson are required"
+      });
+    }
+
+    const prompt = `
+You are an AI tutor helping a student understand a lesson.
+
+Lesson Title:
+${lesson.title}
+
+Lesson Summary:
+${lesson.summary?.join("\n")}
+
+Scenes:
+${lesson.scenes
+  ?.map((scene) => `${scene.title}: ${scene.narration}`)
+  .join("\n")}
+
+Student Question:
+${question}
+
+Explain clearly in a beginner-friendly way.
+`;
+
+    const response = await fetch(
+      `${GEMINI_API_URL}?key=${encodeURIComponent(GEMINI_API_KEY)}`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+  contents: [
+    {
+      role: "user",
+      parts: [{ text: prompt }]
+    }
+  ],
+  generationConfig: {
+    temperature: 0.7,
+    maxOutputTokens: 1000
+  }
+})
+      }
+    );
+
+    const data = await response.json();
+    if (data.error) {
+  console.log("Gemini Error:", data.error);
+
+  return res.json({
+    answer:
+  "AI requests are temporarily busy. Please wait a few seconds and try again."
+  });
+}
+    console.log(data);
+    console.log(JSON.stringify(data, null, 2));
+
+const answer =
+  data?.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text || "")
+    .join("\n") ||
+  "No response generated.";
+
+    res.json({
+      answer
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "AI chat failed"
+    });
+  }
+});
