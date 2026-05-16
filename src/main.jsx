@@ -52,8 +52,7 @@ function App() {
 
     const data = await response.json();
 
-    setSavedLessons(data);
-
+    setSavedLessons(Array.isArray(data) ? data : []);
   } catch (error) {
     console.error(error);
   }
