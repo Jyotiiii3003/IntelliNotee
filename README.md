@@ -1,4 +1,4 @@
-# intelliNote
+# IntelliNote
 
 intelliNote is an AI learning studio that turns source material into an interactive explanatory lesson. It accepts files, links, and pasted text, then generates a visual video-style walkthrough, narration, captions, quizzes, and a mind map.
 
