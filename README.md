@@ -77,7 +77,7 @@ Then run intelliNote:
 npm run dev
 ```
 
-For deployed apps, set the same environment variables in your hosting provider's backend settings. Never put the Gemini API key in frontend React code.
+For deployed app, set the same environment variables in your hosting provider's backend settings. Never put the Gemini API key in frontend React code.
 
 You can use a different Gemini model by changing:
 
